@@ -1,9 +1,11 @@
 package org.example.LoadBalancer;
 
 import org.example.Request.Request;
+import org.example.Worker.Worker;
 import org.example.Worker.WorkerLoads;
 import org.example.Worker.WorkerManager;
 import org.example.Worker.WorkerPlan;
+import org.example.Worker.WorkerTask;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -42,6 +44,7 @@ public class LoadBalancer {
 
                 Request clientRequest = getClientRequest(clientSocket);
                 String response = selectedWorker.processRequest(clientRequest);
+                //System.out.println("Response from worker: " + response);
                 sendResponseToClient(clientSocket, response);
 
                 decrementLoad(selectedWorkerIndex);
@@ -90,8 +93,11 @@ public class LoadBalancer {
     public void startLoadBalancer() {
         try (ServerSocket balancerSocket = new ServerSocket(port)) {
             while (!Thread.interrupted()) {
+                long startTime = System.currentTimeMillis();
                 Socket clientSocket = balancerSocket.accept();
                 distributeRequest(clientSocket);
+                long processingTime = System.currentTimeMillis() - startTime;
+                System.out.println("Request processing time: " + processingTime + " ms");
             }
         } catch (IOException e) {
             logger.error("Error starting load balancer", e);
@@ -109,8 +115,8 @@ public class LoadBalancer {
     }
 
     public static void main(String[] args) {
-        WorkerManager workerManager = new WorkerManager(10, WorkerPlan.class);
-        LoadBalancer loadBalancer = new LoadBalancer(workerManager, args[0], Integer.parseInt(args[1]),Integer.parseInt(args[2]));
+        WorkerManager workerManager = new WorkerManager(2, Worker.class, "localhost", 5555);
+        LoadBalancer loadBalancer = new LoadBalancer(workerManager, "LC", 4 ,5555);
         loadBalancer.startLoadBalancer();
     }
 }
