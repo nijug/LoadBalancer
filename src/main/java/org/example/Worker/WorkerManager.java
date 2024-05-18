@@ -16,7 +16,11 @@ public class WorkerManager<T extends WorkerPlan> {
         try {
             Class<?>[] constructorArgClasses = new Class[constructorArgs.length];
             for (int i = 0; i < constructorArgs.length; i++) {
-                constructorArgClasses[i] = constructorArgs[i].getClass();
+                if (constructorArgs[i] instanceof Integer) {
+                    constructorArgClasses[i] = int.class; // Use int.class for Integer
+                } else {
+                    constructorArgClasses[i] = constructorArgs[i].getClass();
+                }
             }
             Constructor<T> constructor = workerClass.getDeclaredConstructor(constructorArgClasses);
 
