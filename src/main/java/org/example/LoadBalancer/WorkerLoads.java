@@ -1,12 +1,14 @@
-package org.example.Worker;
+package org.example.LoadBalancer;
 
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class WorkerLoads {
     private final ArrayList<AtomicInteger> workerLoads = new ArrayList<>();
+    private final AtomicInteger numWorkers;
 
-    public WorkerLoads(int num_servers) {
+     WorkerLoads(int num_servers) {
+        this.numWorkers = new AtomicInteger(num_servers);
         for (int i = 0; i < num_servers; i++)
             workerLoads.add(new AtomicInteger(0));
     }
@@ -23,11 +25,15 @@ public class WorkerLoads {
         return min_ind;
     }
 
-    public void incrementLoad(int index){
+    void incrementLoad(int index){
         workerLoads.get(index).incrementAndGet();
     }
 
-    public void decrementLoad(int index){
+    void decrementLoad(int index){
         workerLoads.get(index).decrementAndGet();
+    }
+
+    int getNumWorkers() {
+        return numWorkers.get();
     }
 }

@@ -1,11 +1,6 @@
 package org.example.LoadBalancer;
 
 import org.example.Request.Request;
-import org.example.Worker.Worker;
-import org.example.Worker.WorkerLoads;
-import org.example.Worker.WorkerManager;
-import org.example.Worker.WorkerPlan;
-import org.example.Worker.WorkerTask;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -13,50 +8,55 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.*;
 
 public class LoadBalancer {
     private static final Logger logger = LogManager.getLogger(LoadBalancer.class);
     private final ExecutorService executorService;
-    private final WorkerManager workerManager;
+
     private final WorkerLoads workerLoads;
     private int currentIndex = 0;
-    private String schedAlgo;
-    private int port;
+    private final String schedAlgo;
+    private final List<Socket> workerSockets = new ArrayList<>();
+    private final int port;
 
-    public LoadBalancer(WorkerManager workerManager, String schedAlgo, int numThreads, int port) {
-        this.workerManager = workerManager;
-        this.workerLoads = new WorkerLoads(workerManager.getWorkerCount());
-        executorService = Executors.newFixedThreadPool(numThreads);
+    public LoadBalancer(String schedAlgo, int numWorkers, int port, int workerStartPort) {
+        this.workerLoads = new WorkerLoads(numWorkers);
+        this.executorService = Executors.newFixedThreadPool(numWorkers);
         this.schedAlgo = schedAlgo;
         this.port = port;
+
+        for (int i = 0; i < numWorkers; i++) {
+            try {
+                workerSockets.add(new Socket("localhost", workerStartPort + i));
+            } catch (IOException e) {
+                logger.error("Error connecting to worker", e);
+            }
+        }
     }
 
-    /* funkcjonalność LBrequestServer została robita pod inna strukture projektu,
-    czesc odpowiedzialna za procsowanie reqesta do workera została zamieniona na przekazywanie requesta który jest procesowany juz w klasie Worker,
-    czesc odpowiedzialna za odbieranie i w zwracanie requesta dko klienta jest niżej*/
     public void distributeRequest(Socket clientSocket) {
         executorService.submit(() -> {
             try {
                 int selectedWorkerIndex = selectWorker();
-                WorkerPlan selectedWorker = workerManager.getWorker(selectedWorkerIndex);
-                incrementLoad(selectedWorkerIndex);
+                workerLoads.incrementLoad(selectedWorkerIndex);
 
-                Request clientRequest = getClientRequest(clientSocket);
-                String response = selectedWorker.processRequest(clientRequest);
-                //System.out.println("Response from worker: " + response);
+                String clientRequest = getClientRequest(clientSocket);
+                String response = sendRequestToWorker(selectedWorkerIndex, clientRequest);
+
                 sendResponseToClient(clientSocket, response);
-
-                decrementLoad(selectedWorkerIndex);
+                workerLoads.decrementLoad(selectedWorkerIndex);
             } catch (IOException e) {
                 logger.error("Error processing request", e);
             }
         });
     }
 
-    private Request getClientRequest(Socket clientSocket) throws IOException {
+    private String getClientRequest(Socket clientSocket) throws IOException {
         BufferedReader clientReader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream(), StandardCharsets.UTF_8));
-        return Request.fromNetworkString(clientReader.readLine());
+        return clientReader.readLine();
     }
 
     private void sendResponseToClient(Socket clientSocket, String response) throws IOException {
@@ -70,31 +70,30 @@ public class LoadBalancer {
         int selectedWorkerIndex;
         if (schedAlgo.equals("LC")) { // least connections
             selectedWorkerIndex = workerLoads.getMinLoadServer();
-        } else { // defaultowo to Round Robin
-            selectedWorkerIndex = (currentIndex + 1) % workerManager.getWorkerCount();
+        } else { // default to Round Robin
+            selectedWorkerIndex = (currentIndex + 1) % workerLoads.getNumWorkers();
             currentIndex = selectedWorkerIndex;
         }
         return selectedWorkerIndex;
     }
 
-    private void incrementLoad(int workerIndex) {
-        if (schedAlgo.equals("LC")) { // least connections
-            workerLoads.incrementLoad(workerIndex);
-        }
+    private String sendRequestToWorker(int workerIndex, String request) throws IOException {
+        Socket workerSocket = workerSockets.get(workerIndex);
+        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(workerSocket.getOutputStream(), StandardCharsets.UTF_8));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(workerSocket.getInputStream(), StandardCharsets.UTF_8));
+
+        writer.write(request + "\n");
+        writer.flush();
+
+        return reader.readLine();
     }
 
-    private void decrementLoad(int workerIndex) {
-        if (schedAlgo.equals("LC")) { // least connections
-            workerLoads.decrementLoad(workerIndex);
-        }
-    }
-
-
-    public void startLoadBalancer() {
+    private void startLoadBalancer() {
         try (ServerSocket balancerSocket = new ServerSocket(port)) {
             while (!Thread.interrupted()) {
                 long startTime = System.currentTimeMillis();
                 Socket clientSocket = balancerSocket.accept();
+                System.out.println("Received request from client: " + clientSocket);
                 distributeRequest(clientSocket);
                 long processingTime = System.currentTimeMillis() - startTime;
                 System.out.println("Request processing time: " + processingTime + " ms");
@@ -115,8 +114,31 @@ public class LoadBalancer {
     }
 
     public static void main(String[] args) {
-        WorkerManager workerManager = new WorkerManager(2, Worker.class, "localhost", 5555);
-        LoadBalancer loadBalancer = new LoadBalancer(workerManager, "LC", 4 ,5555);
+        if (args.length != 4) {
+            System.out.println("Usage: java LoadBalancer <scheduling algorithm> <number of workers> <port number> <worker start port>");
+            return;
+        }
+
+        String schedAlgo = args[0];
+        if (!schedAlgo.equals("LC") && !schedAlgo.equals("RR")) {
+            System.out.println("Invalid scheduling algorithm. Valid options are 'LC' for Least Connections and 'RR' for Round Robin.");
+            return;
+        }
+
+        int numWorkers;
+        int port;
+        int workerStartPort;
+        try {
+            numWorkers = Integer.parseInt(args[1]);
+            port = Integer.parseInt(args[2]);
+            workerStartPort = Integer.parseInt(args[3]);
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid number of workers, port number, or worker start port. Please enter valid integers.");
+            return;
+        }
+
+        LoadBalancer loadBalancer = new LoadBalancer(schedAlgo, numWorkers, port, workerStartPort);
         loadBalancer.startLoadBalancer();
     }
-}
+
+    }

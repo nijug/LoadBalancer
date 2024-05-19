@@ -5,26 +5,20 @@ import com.google.gson.Gson;
 public class Request {
     private String content;
 
-    // overload dla jsona
-    public static Request fromNetworkString(String networkString, boolean isJson) {
-        if (isJson) {
-            Gson gson = new Gson();
-            return gson.fromJson(networkString, Request.class);
-        } else {
-            Request request = new Request();
-            request.setContent(networkString);
-            return request;
-        }
-    }
-
     // dla stringów
-    public static Request fromNetworkString(String networkString) {
+    public static Request fromString(String networkString) {
         Request request = new Request();
         request.setContent(networkString);
         return request;
     }
 
-    public String toNetworkString() {
+    public static Request fromJson(String json) {
+        Gson gson = new Gson();
+        return gson.fromJson(json, Request.class);
+    }
+
+    //serializacja obiekut request do jsona
+    public String toJson() {
         Gson gson = new Gson();
         return gson.toJson(this);
     }

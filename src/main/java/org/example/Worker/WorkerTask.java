@@ -8,17 +8,16 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-public class WorkerTask implements WorkerPlan{
+public class WorkerTask{
     private final Connection connection;
 
     public WorkerTask(Connection connection) {
         this.connection = connection;
     }
-    @Override
+
     public String processRequest(Request request) {
         String response;
         String query = request.toString();
-
         try (Statement statement = connection.createStatement()) {
             if (query.trim().toLowerCase().startsWith("select")) {
                 ResultSet resultSet = statement.executeQuery(query);
@@ -47,18 +46,4 @@ public class WorkerTask implements WorkerPlan{
         return result.toString();
     }
 
-    public static void main(String[] args) {
-        String DB_URL = "jdbc:sqlite:mydatabase.db";
-        try (Connection connection = DriverManager.getConnection(DB_URL)) {
-            WorkerTask workerTask = new WorkerTask(connection);
-            System.out.println("Worker task started");
-
-            Request request = new Request();
-            request.setContent("SELECT * FROM books");
-            String response = workerTask.processRequest(request);
-            System.out.println("Response from database: \n" + response);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
 }
