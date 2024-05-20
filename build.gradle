@@ -1,15 +1,14 @@
 plugins {
     id 'java'
     id 'application'
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
 }
 
 repositories {
         mavenCentral()
 }
 
-application {
-    mainClassName = 'org.example.Worker.WorkerManager'
-}
+
 dependencies {
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
@@ -18,14 +17,16 @@ dependencies {
     implementation 'org.apache.logging.log4j:log4j-core:2.14.1'
     testImplementation 'org.mockito:mockito-core:5.12.0'
     implementation 'org.slf4j:slf4j-simple:1.7.32'
-    implementation 'mysql:mysql-connector-java:8.0.26'
+    implementation 'com.mysql:mysql-connector-j:8.4.0'
     }
 
 test {
     useJUnitPlatform()
 }
 
+
 tasks.register('buildWorkerManager', Jar) {
+    dependsOn 'build'
     from sourceSets.main.output
     archiveBaseName.set('WorkerManager')
     manifest {
@@ -34,6 +35,7 @@ tasks.register('buildWorkerManager', Jar) {
 }
 
 tasks.register('buildLoadBalancer', Jar) {
+    dependsOn 'build'
     from sourceSets.main.output
     archiveBaseName.set('LoadBalancer')
     manifest {
@@ -42,6 +44,7 @@ tasks.register('buildLoadBalancer', Jar) {
 }
 
 tasks.register('buildClient', Jar) {
+    dependsOn 'build'
     from sourceSets.main.output
     archiveBaseName.set('Client')
     manifest {

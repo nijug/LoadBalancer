@@ -45,8 +45,12 @@ public class Worker implements Runnable {
         String url = "jdbc:mysql://" + hostname + ":" + port + "/" + database;
 
         try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
             connection = DriverManager.getConnection(url, username, password);
             System.out.println("Worker connected to the database.");
+        } catch (ClassNotFoundException e) {
+            System.out.println("MySQL JDBC Driver not found.");
+            e.printStackTrace();
         } catch (SQLException e) {
             e.printStackTrace();
         }

@@ -26,7 +26,7 @@ public class WorkerManager {
 
     public static void main(String[] args) {
         if (args.length != 2) {
-            System.out.println("Usage: java WorkerManager <number of workers>");
+            System.out.println("Usage: java WorkerManager <number of workers> <start port>");
             return;
         }
 

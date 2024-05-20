@@ -1,7 +1,5 @@
 package org.example.LoadBalancer;
 
-import org.example.Request.Request;
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.*;
@@ -13,7 +11,6 @@ import java.util.List;
 import java.util.concurrent.*;
 
 public class LoadBalancer {
-    private static final Logger logger = LogManager.getLogger(LoadBalancer.class);
     private final ExecutorService executorService;
 
     private final WorkerLoads workerLoads;
@@ -32,7 +29,7 @@ public class LoadBalancer {
             try {
                 workerSockets.add(new Socket("localhost", workerStartPort + i));
             } catch (IOException e) {
-                logger.error("Error connecting to worker", e);
+                throw new RuntimeException("Error connecting to worker", e);
             }
         }
     }
@@ -49,7 +46,7 @@ public class LoadBalancer {
                 sendResponseToClient(clientSocket, response);
                 workerLoads.decrementLoad(selectedWorkerIndex);
             } catch (IOException e) {
-                logger.error("Error processing request", e);
+               throw new RuntimeException("Error processing client request", e);
             }
         });
     }
@@ -99,7 +96,7 @@ public class LoadBalancer {
                 System.out.println("Request processing time: " + processingTime + " ms");
             }
         } catch (IOException e) {
-            logger.error("Error starting load balancer", e);
+           throw new RuntimeException("Error accepting client connection", e);
         } finally {
             executorService.shutdown();
             try {

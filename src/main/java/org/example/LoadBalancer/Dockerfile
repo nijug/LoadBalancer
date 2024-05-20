@@ -9,5 +9,5 @@ RUN gradle buildLoadBalancer test --no-daemon
 FROM openjdk:21-slim
 WORKDIR /app
 COPY --from=build /app/build/libs/*.jar ./LoadBalancer.jar
-ENTRYPOINT ["java","-jar","LoadBalancer.jar"]
-CMD ["$SCHED_ALGO", "$NUM_WORKERS", "$LB_PORT", "$WORKER_START_PORT"]
+ENTRYPOINT ["sh", "-c"]
+CMD ["java -jar LoadBalancer.jar $SCHED_ALGO $NUM_WORKERS $LB_PORT $WORKER_START_PORT
