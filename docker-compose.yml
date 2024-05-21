@@ -25,8 +25,8 @@ services:
 
   loadbalancer:
     build:
-        context: .
-        dockerfile: src/main/java/org/example/LoadBalancer/Dockerfile
+      context: .
+      dockerfile: src/main/java/org/example/LoadBalancer/Dockerfile
     environment:
       - SCHED_ALGO=LC
       - NUM_WORKERS=5
@@ -39,11 +39,11 @@ services:
 
   client:
     build:
-        context: .
-        dockerfile: src/main/java/org/example/Client/Dockerfile
+      context: .
+      dockerfile: src/main/java/org/example/Client/Dockerfile
     environment:
-      - NUM_CLIENTS=10
-      - CLIENT_PORT=8080
+      - NUM_CLIENTS=1
+      - LB_PORT=8081
     networks:
       - mynetwork
     depends_on:

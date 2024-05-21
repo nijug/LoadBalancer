@@ -1,7 +1,7 @@
 plugins {
     id 'java'
     id 'application'
-    id 'com.github.johnrengelman.shadow' version '7.1.2'
+
 }
 
 repositories {
@@ -26,28 +26,40 @@ test {
 
 
 tasks.register('buildWorkerManager', Jar) {
-    dependsOn 'build'
     from sourceSets.main.output
     archiveBaseName.set('WorkerManager')
     manifest {
         attributes 'Main-Class': 'org.example.Worker.WorkerManager'
     }
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    with jar
 }
 
 tasks.register('buildLoadBalancer', Jar) {
-    dependsOn 'build'
     from sourceSets.main.output
     archiveBaseName.set('LoadBalancer')
     manifest {
         attributes 'Main-Class': 'org.example.LoadBalancer.LoadBalancer'
     }
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    with jar
 }
 
 tasks.register('buildClient', Jar) {
-    dependsOn 'build'
     from sourceSets.main.output
     archiveBaseName.set('Client')
     manifest {
         attributes 'Main-Class': 'org.example.Client.Client'
     }
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    with jar
 }

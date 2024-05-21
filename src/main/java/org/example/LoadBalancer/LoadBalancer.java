@@ -27,11 +27,12 @@ public class LoadBalancer {
 
         for (int i = 0; i < numWorkers; i++) {
             try {
-                workerSockets.add(new Socket("localhost", workerStartPort + i));
+                workerSockets.add(new Socket("workermanager", workerStartPort + i));
             } catch (IOException e) {
                 throw new RuntimeException("Error connecting to worker", e);
             }
         }
+        System.out.println("Load balancer started on port " + port + " with " + numWorkers + " workers.");
     }
 
     public void distributeRequest(Socket clientSocket) {
@@ -90,10 +91,10 @@ public class LoadBalancer {
             while (!Thread.interrupted()) {
                 long startTime = System.currentTimeMillis();
                 Socket clientSocket = balancerSocket.accept();
-                System.out.println("Received request from client: " + clientSocket);
+                //System.out.println("Received request from client: " + clientSocket);
                 distributeRequest(clientSocket);
                 long processingTime = System.currentTimeMillis() - startTime;
-                System.out.println("Request processing time: " + processingTime + " ms");
+                //System.out.println("Request processing time: " + processingTime + " ms");
             }
         } catch (IOException e) {
            throw new RuntimeException("Error accepting client connection", e);

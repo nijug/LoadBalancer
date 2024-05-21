@@ -26,7 +26,7 @@ public class Client {
         try (Socket clientSocket = new Socket(host, port);
              BufferedWriter clientWriter = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream(), StandardCharsets.UTF_8));
              BufferedReader clientReader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream(), StandardCharsets.UTF_8))) {
-            System.out.println("query: " +query);
+            //System.out.println("query: " +query);
             Request requestToLB = Request.fromString(query);
             clientWriter.write(requestToLB.toJson() + "\n");
             clientWriter.flush();
@@ -45,11 +45,12 @@ public class Client {
         final Runnable requestSender = () -> {
             try {
                 while (true) {
+                    /*
                     System.out.println("Sending request to server");
-                    String response = sendRequest("SELECT * FROM books WHERE id < 5");
-                    System.out.println("Response from server: " + response);
 
-                    // Sleep for a random period between 0.1 and 0.5 seconds
+                    System.out.println("Response from server: " + response);
+                    */
+                    String response = sendRequest("SELECT * FROM books WHERE id < 5");
                     Thread.sleep((random.nextInt(5) + 1) * 100);
                 }
             } catch (Exception e) {
@@ -76,7 +77,7 @@ public class Client {
         }
 
         for (int i = 0; i < numClients; i++) {
-            Client client = new Client("localhost", LBport);
+            Client client = new Client("loadbalancer", LBport);
             client.sendPeriodicRequest();
         }
     }
